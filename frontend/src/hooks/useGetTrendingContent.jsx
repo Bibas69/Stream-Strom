@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useContentStore } from "../store/content";
 import axios from "axios";
+import getBackendUrl from "../utils/getBackendUrl";
 
 const useGetTrendingContent = () => {
 	const [trendingContent, setTrendingContent] = useState(null);
@@ -8,8 +9,16 @@ const useGetTrendingContent = () => {
 
 	useEffect(() => {
 		const getTrendingContent = async () => {
-			const res = await axios.get(`/api/v1/${contentType}/trending`);
-			setTrendingContent(res.data.content);
+			try {
+				const res = await axios.get(
+					`${getBackendUrl()}/api/v1/${contentType}/trending`,
+					{ withCredentials: true }
+				);
+				setTrendingContent(res.data.content);
+			} catch (error) {
+				console.error("Error fetching trending content:", error);
+				setTrendingContent(null);
+			}
 		};
 
 		getTrendingContent();
@@ -17,4 +26,5 @@ const useGetTrendingContent = () => {
 
 	return { trendingContent };
 };
+
 export default useGetTrendingContent;
