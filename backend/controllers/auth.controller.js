@@ -1,6 +1,7 @@
 import { User } from "../models/user.model.js";
 import bcryptjs from "bcryptjs";
 import { generateTokenAndSetCookie } from "../utils/generateToken.js";
+import { ENV_VARS } from "../config/envVars.js";
 
 export async function signup(req, res) {
 	try {
@@ -20,14 +21,12 @@ export async function signup(req, res) {
 			return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
 		}
 
-		const existingUserByEmail = await User.findOne({ email: email });
-
+		const existingUserByEmail = await User.findOne({ email });
 		if (existingUserByEmail) {
 			return res.status(400).json({ success: false, message: "Email already exists" });
 		}
 
-		const existingUserByUsername = await User.findOne({ username: username });
-
+		const existingUserByUsername = await User.findOne({ username });
 		if (existingUserByUsername) {
 			return res.status(400).json({ success: false, message: "Username already exists" });
 		}
@@ -36,7 +35,6 @@ export async function signup(req, res) {
 		const hashedPassword = await bcryptjs.hash(password, salt);
 
 		const PROFILE_PICS = ["/avatar1.png", "/avatar2.png", "/avatar3.png"];
-
 		const image = PROFILE_PICS[Math.floor(Math.random() * PROFILE_PICS.length)];
 
 		const newUser = new User({
@@ -46,7 +44,9 @@ export async function signup(req, res) {
 			image,
 		});
 
+		// Set the httpOnly cookie
 		generateTokenAndSetCookie(newUser._id, res);
+
 		await newUser.save();
 
 		res.status(201).json({
@@ -70,17 +70,17 @@ export async function login(req, res) {
 			return res.status(400).json({ success: false, message: "All fields are required" });
 		}
 
-		const user = await User.findOne({ email: email });
+		const user = await User.findOne({ email });
 		if (!user) {
 			return res.status(404).json({ success: false, message: "Invalid credentials" });
 		}
 
 		const isPasswordCorrect = await bcryptjs.compare(password, user.password);
-
 		if (!isPasswordCorrect) {
 			return res.status(400).json({ success: false, message: "Invalid credentials" });
 		}
 
+		// Set the httpOnly cookie
 		generateTokenAndSetCookie(user._id, res);
 
 		res.status(200).json({
@@ -98,7 +98,13 @@ export async function login(req, res) {
 
 export async function logout(req, res) {
 	try {
-		res.clearCookie("jwt-netflix");
+		// Cookie must match sameSite + secure options used when creating the cookie
+		res.clearCookie("jwt-netflix", {
+			httpOnly: true,
+			sameSite: ENV_VARS.NODE_ENV === "production" ? "none" : "lax",
+			secure: ENV_VARS.NODE_ENV === "production",
+		});
+
 		res.status(200).json({ success: true, message: "Logged out successfully" });
 	} catch (error) {
 		console.log("Error in logout controller", error.message);

@@ -8,4 +8,7 @@ export const ENV_VARS = {
 	JWT_SECRET: process.env.JWT_SECRET,
 	NODE_ENV: process.env.NODE_ENV,
 	TMDB_READ_ACCESS_TOKEN: process.env.TMDB_READ_ACCESS_TOKEN,
+
+	// REQUIRED for cookies to work in deployment
+	FRONTEND_URL: process.env.FRONTEND_URL,
 };
